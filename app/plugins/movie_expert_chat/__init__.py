@@ -6,16 +6,16 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from app.commands import Command
 
-class HistoryTeacherChat(Command):
+class  FitnessTrainerAgent(Command):
     def __init__(self):
         super().__init__()
-        self.name = "history"
-        self.description = "This agent is pretending to be a history teacher of ancient Rome"
+        self.name = "fitness_trainer"
+        self.description = "This agent is pretending to be highly knowleglable trainer, that create personalized workout plans."
         self.history = []
         load_dotenv()
         API_KEY = os.getenv('OPEN_AI_KEY')
         # you can try GPT4 but it costs a lot more money than the default 3.5
-        self.llm = ChatOpenAI(openai_api_key=API_KEY, model="gpt-4-0125-preview")  # Initialize once and reuse
+        self.llm = ChatOpenAI(openai_api_key=API_KEY, model="gpt-3.5-turbo")  # Initialize once and reuse
         # This is default 3.5 chatGPT
         # self.llm = ChatOpenAI(openai_api_key=API_KEY)  # Initialize once and reuse
 
@@ -40,23 +40,23 @@ class HistoryTeacherChat(Command):
         return response, tokens_used
 
     def execute(self, *args, **kwargs):
-        character_name = kwargs.get("character_name", "Movie Expert")
-        print(f"This your Roman history teacher")
+        print("Welcome to Fitness Trainer Agent!")
 
-        while True:
-            user_input = input("You: ").strip()
-            if user_input.lower() == "done":
-                print("Thank you for using the Movie Expert Chat. Goodbye!")
-                break
-
-            self.history.append(("user", user_input))
+    age = input("Enter your age: ")
+    height = input("Enter your height in cm: ")
+    weight = input("Enter your weight in kg: ")
+    goals = input("Describe your fitness goals: ")
+    limitations = input("List any physical limitations or health concerns: ")
             
-            try:
-                response, tokens_used = self.interact_with_ai(user_input, character_name)
-                print(f"Movie Expert: {response}")
-                print(f"(This interaction used {tokens_used} tokens.)")
-                self.history.append(("system", response))
-            except Exception as e:
-                print("Sorry, there was an error processing your request. Please try again.")
-                logging.error(f"Error during interaction: {e}")
+    try:
+        # Generate the workout plan based on the user's input
+        response, tokens_used = self.interact_with_ai(age, height, weight, goals, limitations)
+        print(f"Fitness Trainer Agent:\n{response}")
+        print(f"This interaction used {tokens_used} tokens.")
+        self.history.append(("system", response))
+    except Exception as e:
+        print("Sorry, there was an error processing your workout plan. Please try again.")
+        logging.error(f"Error during interaction: {e}")
+        
+    print("Thank you for using the Fitness Trainer Agent. Goodbye!")
 
