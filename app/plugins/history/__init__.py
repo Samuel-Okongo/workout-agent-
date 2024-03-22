@@ -1,61 +1,81 @@
 import os
 import logging
-from dotenv import load_dotenv
+from datetime import datetime
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from app.commands import Command
 
-class MovieExpertChat(Command):
-    def __init__(self):
+class FitnessHistory(Command):
+    """Command for interacting with a user's workout history."""
+
+    def __init__(self, user_id):
         super().__init__()
-        self.name = "movies"
-        self.description = "Interact with a Movie Expert AI to explore movie preferences."
-        self.history = []
-        load_dotenv()
-        API_KEY = os.getenv('OPEN_AI_KEY')
-        # you can try GPT4 but it costs a lot more money than the default 3.5
-        self.llm = ChatOpenAI(openai_api_key=API_KEY, model="gpt-4-0125-preview")  # Initialize once and reuse
-        # This is default 3.5 chatGPT
-        # self.llm = ChatOpenAI(openai_api_key=API_KEY)  # Initialize once and reuse
+        self.name = "fitness_history"
+        self.description = "Interact with your fitness history to track your progress."
+        self.history = []  # List to store the workout sessions
+        self.user_id = user_id  # Assuming each user has a unique ID
 
-    def calculate_tokens(self, text):
-        # More accurate token calculation mimicking OpenAI's approach
-        return len(text) + text.count(' ')
+    def add_workout_session(self, session_data):
+        """Add a workout session to the history."""
+        session_data['timestamp'] = datetime.now().isoformat()  # Automatically add the current timestamp
+        self.history.append(session_data)
+        logging.info(f"User {self.user_id}: Added workout session to history: {session_data}")
+        # Here you might also want to persist this data to a database or file
 
-    def interact_with_ai(self, user_input, character_name):
-        # Generate a more conversational and focused prompt
-        prompt_text = "You're a Movie Expert AI. Engage the user in a natural conversation about their movie preferences. Use your insights to recommend movies they might like."
-        prompt = ChatPromptTemplate.from_messages(self.history + [("system", prompt_text)])
-        
-        output_parser = StrOutputParser()
-        chain = prompt | self.llm | output_parser
+    def get_last_session(self):
+        """Get the last workout session if available."""
+        return self.history[-1] if self.history else None
 
-        response = chain.invoke({"input": user_input})
+    def summarize_history(self):
+        """Create a summary of the workout history."""
+        total_time = sum(session['duration'] for session in self.history)
+        total_workouts = len(self.history)
+        # Assuming each session has 'calories_burned' recorded
+        total_calories = sum(session['calories_burned'] for session in self.history)
 
-        # Token usage logging and adjustment for more accurate counting
-        tokens_used = self.calculate_tokens(prompt_text + user_input + response)
-        logging.info(f"OpenAI API call made. Tokens used: {tokens_used}")
-        return response, tokens_used
+        summary = {
+            "total_sessions": total_workouts,
+            "total_time_spent": total_time,
+            "total_calories_burned": total_calories
+        }
+        return summary
 
     def execute(self, *args, **kwargs):
-        character_name = kwargs.get("character_name", "Movie Expert")
-        print(f"Welcome to the Movie Expert Chat! Let's talk about your movie preferences. Type 'done' to exit anytime.")
+        """Execute the fitness history command."""
+        user_input = kwargs.get('user_input', 'summary')  # Default to showing summary
 
-        while True:
-            user_input = input("You: ").strip()
-            if user_input.lower() == "done":
-                print("Thank you for using the Movie Expert Chat. Goodbye!")
-                break
+        if user_input == 'add':
+            session_data = kwargs.get('session_data')
+            if session_data:
+                self.add_workout_session(session_data)
+            else:
+                logging.error("No session data provided for 'add' operation.")
+        elif user_input == 'last':
+            return self.get_last_session()
+        elif user_input == 'summary':
+            return self.summarize_history()
+        else:
+            logging.error(f"Invalid user input for fitness history: {user_input}")
+            # Depending on your error handling, you might want to raise a custom exception here
 
-            self.history.append(("user", user_input))
-            
-            try:
-                response, tokens_used = self.interact_with_ai(user_input, character_name)
-                print(f"Movie Expert: {response}")
-                print(f"(This interaction used {tokens_used} tokens.)")
-                self.history.append(("system", response))
-            except Exception as e:
-                print("Sorry, there was an error processing your request. Please try again.")
-                logging.error(f"Error during interaction: {e}")
+# Example of how this class could be used
+if __name__ == "__main__":
+    user_id = "user123"
+    history_cmd = FitnessHistory(user_id=user_id)
+
+    # Adding a workout session
+    history_cmd.execute(user_input='add', session_data={
+        'workout_type': 'Running',
+        'duration': 30,  # Duration in minutes
+        'calories_burned': 300
+    })
+
+    # Getting the last workout session
+    last_session = history_cmd.execute(user_input='last')
+    print(f"Last workout session: {last_session}")
+
+    # Getting a summary of all workouts
+    summary = history_cmd.execute(user_input='summary')
+    print(f"Workout summary: {summary}")
 
