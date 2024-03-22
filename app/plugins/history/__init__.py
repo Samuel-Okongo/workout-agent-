@@ -4,15 +4,14 @@ from datetime import datetime
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
-from app.commands import Command
+from app import Command
 
 class FitnessHistory(Command):
     """Command for interacting with a user's workout history."""
 
-    def __init__(self, user_id):
-        super().__init__()
-        self.name = "fitness_history"
-        self.description = "Interact with your fitness history to track your progress."
+    def __init__(self, user_id=None):
+        # Call the superclass constructor with the name and description
+        super().__init__("fitness_history", "Interact with your fitness history to track your progress.")
         self.history = []  # List to store the workout sessions
         self.user_id = user_id  # Assuming each user has a unique ID
 
@@ -31,7 +30,6 @@ class FitnessHistory(Command):
         """Create a summary of the workout history."""
         total_time = sum(session['duration'] for session in self.history)
         total_workouts = len(self.history)
-        # Assuming each session has 'calories_burned' recorded
         total_calories = sum(session['calories_burned'] for session in self.history)
 
         summary = {
@@ -57,25 +55,4 @@ class FitnessHistory(Command):
             return self.summarize_history()
         else:
             logging.error(f"Invalid user input for fitness history: {user_input}")
-            # Depending on your error handling, you might want to raise a custom exception here
-
-# Example of how this class could be used
-if __name__ == "__main__":
-    user_id = "user123"
-    history_cmd = FitnessHistory(user_id=user_id)
-
-    # Adding a workout session
-    history_cmd.execute(user_input='add', session_data={
-        'workout_type': 'Running',
-        'duration': 30,  # Duration in minutes
-        'calories_burned': 300
-    })
-
-    # Getting the last workout session
-    last_session = history_cmd.execute(user_input='last')
-    print(f"Last workout session: {last_session}")
-
-    # Getting a summary of all workouts
-    summary = history_cmd.execute(user_input='summary')
-    print(f"Workout summary: {summary}")
 
