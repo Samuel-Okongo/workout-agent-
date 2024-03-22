@@ -44,19 +44,28 @@ class App:
                     logging.error(f"Error importing plugin {plugin_name}: {e}")
 
     def register_plugin_commands(self, plugin_module):
-        for item_name in dir(plugin_module):
-            item = getattr(plugin_module, item_name)
-            if isinstance(item, type) and issubclass(item, Command) and item is not Command:
-                command_instance = item()
+     for item_name in dir(plugin_module):
+        item = getattr(plugin_module, item_name)
+        if isinstance(item, type) and issubclass(item, Command) and item is not Command:
+            try:
+                # Attempt to dynamically determine the required constructor arguments here
+                # This is a simplified example; you might need a more complex approach
+                if item_name == 'FitnessHistory':
+                    user_id = self.settings.get('USER_ID')  # or another way to fetch user_id
+                    command_instance = item(user_id=user_id) if user_id is not None else item()
+                else:
+                    command_instance = item()
                 self.command_handler.register_command(command_instance)
-                logging.info(f"Command '{command_instance.name}' from plugin '{command_instance.name}' registered.")
+                logging.info(f"Command '{command_instance.name}' from plugin '{plugin_module.__name__}' registered.")
+            except TypeError as e:
+                logging.error(f"Failed to instantiate command '{item_name}' from plugin '{plugin_module.__name__}': {e}")
+
 
     def start(self):
         self.load_plugins()
-        # Dynamically generate and register the menu command
-        dynamic_menu_command = DynamicMenuCommand(self.command_handler)
+         # Ensure that 'name' and 'description' are passed according to the new constructor
+        dynamic_menu_command = DynamicMenuCommand("show_menu", "Show the dynamic menu of all commands.", self.command_handler)
         self.command_handler.register_command(dynamic_menu_command)
-        
         logging.info("Application started. Type 'show_menu' to see the menu or 'exit' to exit.")
         try:
             while True:
@@ -80,12 +89,9 @@ class App:
         finally:
             logging.info("Application shutdown.")
 
-
 class DynamicMenuCommand(Command):
-    def __init__(self, command_handler):
-        super().__init__()
-        self.name = "show_menu"
-        self.description = "Show the dynamic menu of all commands."
+    def __init__(self, name, description, command_handler):
+        super().__init__(name, description)
         self.command_handler = command_handler
 
     def execute(self, *args, **kwargs):
@@ -95,6 +101,12 @@ class DynamicMenuCommand(Command):
             menu += f"{name}: {description}\n"
         print(menu)
 
-if __name__ == "__main__":
-    app = App()
-    app.start()
+    def handle_input(self, user_input):
+    # Simple keyword-based routing
+     if "stronger" in user_input.lower():
+        self.command_handler.execute_command("fitness_trainer", user_input)
+     elif "history" in user_input.lower() or "past workouts" in user_input.lower():
+        self.command_handler.execute_command("fitness_history")
+     else:
+        # No matching keyword found, provide a helpful message
+        print("Sorry, I didn't understand that. You can type 'show_menu' to see available commands.")
