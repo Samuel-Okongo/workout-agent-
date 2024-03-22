@@ -11,6 +11,7 @@ class Command:
         self.description = description
 
     def execute(self, *args, **kwargs):
+        """Execute the command with the provided arguments."""
         raise NotImplementedError("Command execution not implemented.")
 
 class CommandHandler:
@@ -19,15 +20,18 @@ class CommandHandler:
         self.commands = {}
 
     def register_command(self, command):
+        """Register a command instance."""
         if command.name in self.commands:
             logging.warning(f"Command '{command.name}' is already registered. Overwriting.")
         self.commands[command.name] = command
         logging.info(f"Command '{command.name}' registered successfully.")
 
     def get_commands(self):
+        """Return a list of command metadata for all registered commands."""
         return [(cmd.name, cmd.description) for cmd in self.commands.values()]
 
     def execute_command(self, name, *args):
+        """Execute a command by name."""
         command = self.commands.get(name)
         if not command:
             logging.error(f"Command '{name}' not found.")
@@ -44,7 +48,7 @@ class StartWorkoutCommand(Command):
 
     def execute(self, *args, **kwargs):
         print("Workout session has started! Let's do some exercises.")
-        # Insert the logic to start the workout session here.
+        # Here you would add logic to start the workout session.
 
 class EndWorkoutCommand(Command):
     def __init__(self):
@@ -52,7 +56,7 @@ class EndWorkoutCommand(Command):
 
     def execute(self, *args, **kwargs):
         print("Workout session has ended. Great job!")
-        # Insert the logic to end the workout session here.
+        # Here you would add logic to end the workout session.
 
 # Application class that uses the CommandHandler
 class WorkoutAgentApp:
@@ -61,15 +65,26 @@ class WorkoutAgentApp:
         self.setup_commands()
 
     def setup_commands(self):
+        """Register all commands with the command handler."""
         self.command_handler.register_command(StartWorkoutCommand())
         self.command_handler.register_command(EndWorkoutCommand())
 
     def run(self):
-        # This is a placeholder for the main loop of the application.
-        # Here, you could implement a CLI, a GUI, or a web interface that interacts with the user.
+        """Run the main application loop."""
+        print("Welcome to the Workout Agent!")
+        print("Available commands: ")
+        for name, description in self.command_handler.get_commands():
+            print(f"{name} - {description}")
+        print("Type 'exit' to quit.")
+
         while True:
             command_input = input("Enter a command: ")
-            if command_input == "exit":
+            if command_input.lower() == "exit":
+                print("Exiting the Workout Agent. Goodbye!")
                 break
             self.command_handler.execute_command(command_input)
 
+# Entry point for the application
+if __name__ == "__main__":
+    app = WorkoutAgentApp()
+    app.run()
