@@ -1,32 +1,32 @@
 import pytest
 from app import App
-from app.plugins.goodbye import GoodbyeCommand
-from app.plugins.greet import GreetCommand
+from app.commands.start_workout import StartWorkoutCommand
+from app.commands.end_workout import EndWorkoutCommand
 
-
-def test_app_greet_command(capfd, monkeypatch):
-    """Test that the REPL correctly handles the 'greet' command."""
-    # Simulate user entering 'greet' followed by 'exit'
-    inputs = iter(['greet', 'exit'])
+def test_app_start_workout_command(capfd, monkeypatch):
+    """Test that the application correctly handles the 'start_workout' command."""
+    # Simulate user entering 'start_workout' followed by 'exit'
+    inputs = iter(['start_workout', 'exit'])
     monkeypatch.setattr('builtins.input', lambda _: next(inputs))
 
     app = App()
-    with pytest.raises(SystemExit) as e:
-        app.start()  # Assuming App.start() is now a static method based on previous discussions
-    
-    assert str(e.value) == "Exiting...", "The app did not exit as expected"
+    app.command_handler.register_command(StartWorkoutCommand())
+    app.command_handler.register_command(EndWorkoutCommand())
+    app.start()  # Assuming App.start() initiates a loop for command input
 
-def test_app_menu_command(capfd, monkeypatch):
-    """Test that the REPL correctly handles the 'greet' command."""
-    # Simulate user entering 'greet' followed by 'exit'
-    inputs = iter(['menu', 'exit'])
+    out, err = capfd.readouterr()
+    assert "Workout session has started!" in out, "The start workout command did not execute as expected"
+
+def test_app_end_workout_command(capfd, monkeypatch):
+    """Test that the application correctly handles the 'end_workout' command."""
+    # Simulate user entering 'end_workout' followed by 'exit'
+    inputs = iter(['end_workout', 'exit'])
     monkeypatch.setattr('builtins.input', lambda _: next(inputs))
 
     app = App()
-    with pytest.raises(SystemExit) as e:
-        app.start()  # Assuming App.start() is now a static method based on previous discussions
-    
-    assert str(e.value) == "Exiting...", "The app did not exit as expected"
+    app.command_handler.register_command(StartWorkoutCommand())
+    app.command_handler.register_command(EndWorkoutCommand())
+    app.start()  # Assuming App.start() initiates a loop for command input
 
-
-
+    out, err = capfd.readouterr()
+    assert "Workout session has ended." in out, "The end workout command did not execute as expected"
